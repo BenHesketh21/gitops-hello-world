@@ -1,0 +1,238 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: gitops-common-templates
+  namespace: argo
+spec:
+  # Reusable templates for GitOps promotion pipelines
+  templates:
+  - name: git-clone-ensure-branch
+    inputs:
+      parameters:
+      - name: repo-url
+      - name: auth-method
+        value: auto
+      - name: base-branch
+        value: main
+      - name: branch
+        value: main
+      - name: dest
+        value: /work/repo
+      - name: git-user-name
+        value: "Argo Workflows"
+      - name: git-user-email
+        value: "argowf@example.com"
+    script:
+      image: alpine/git:latest
+      command: [sh]
+      volumeMounts:
+      - name: work
+        mountPath: /work
+      env:
+      - name: GIT_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: git-http-credentials
+            key: GIT_TOKEN
+      - name: GIT_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: git-http-credentials
+            key: GIT_USERNAME
+      source: |
+        set -eu
+        REPO_URL="{{inputs.parameters.repo-url}}"
+        BRANCH="{{inputs.parameters.branch}}"
+        BASE_BRANCH="{{inputs.parameters.base-branch}}"
+        AUTH_METHOD_PARAM="{{inputs.parameters.auth-method}}"
+        mkdir -p {{inputs.parameters.dest}}
+        cd {{inputs.parameters.dest}}
+        export GIT_TERMINAL_PROMPT=0 
+
+        # Decide whether to use HTTPS auth header or SSH. auth-method param: auto|ssh|https
+        USE_HTTPS=0
+        if [ "${AUTH_METHOD_PARAM}" = "https" ]; then
+          USE_HTTPS=1
+        elif [ "${AUTH_METHOD_PARAM}" = "ssh" ]; then
+          USE_HTTPS=0
+        else
+          case "$REPO_URL" in http://*|https://*) USE_HTTPS=1 ;; *) USE_HTTPS=0 ;; esac
+        fi
+
+        # Clone or fetch accordingly. HTTPS uses a temporary header with the token to avoid writing credentials to disk.
+        if [ ! -d .git ]; then
+          echo "Cloning repository $REPO_URL (branch: $BRANCH, auth: $AUTH_METHOD_PARAM)"
+          if [ "$USE_HTTPS" -eq 1 ]; then
+            # Use http.extraHeader and an inline credential helper to supply username/password from env
+            git \
+                -c credential.helper="!f() { echo username=${GIT_USERNAME:-}; echo password=${GIT_TOKEN}; }; f" \
+                clone "$REPO_URL" .
+          else
+            git clone "$REPO_URL" .
+          fi
+        else
+          echo "Repository already cloned, fetching updates from origin (auth: $AUTH_METHOD_PARAM)"
+          if [ "$USE_HTTPS" -eq 1 ]; then
+            git \
+                -c credential.helper="!f() { echo username=${GIT_USERNAME:-}; echo password=${GIT_TOKEN}; }; f" \
+                fetch origin --prune
+          else
+            git fetch origin --prune
+          fi
+        fi
+
+        git config user.email "{{inputs.parameters.git-user-email}}"
+        git config user.name "{{inputs.parameters.git-user-name}}"
+
+        # Ensure branch exists locally, try remote branch then create if necessary
+        if git rev-parse --verify --quiet refs/heads/"$BRANCH"; then
+          git checkout "$BRANCH"
+        else
+          if git ls-remote --heads origin "$BRANCH" | grep -q refs/heads/"$BRANCH"; then
+            git checkout -b "$BRANCH" origin/"$BRANCH"
+          else
+            git checkout -b "$BRANCH"
+          fi
+        fi
+        pwd
+
+  - name: git-commit-push
+    inputs:
+      parameters:
+      - name: repo-path
+        value: /src
+      - name: auth-method
+        value: auto
+      - name: branch
+        value: main
+      - name: commit-message
+        value: "Argo Workflows: automated commit"
+      - name: git-user-name
+        value: "Argo Workflows"
+      - name: git-user-email
+        value: "argowf@example.com"
+    script:
+      image: alpine/git:latest
+      command: [sh]
+      volumeMounts:
+      - name: work
+        mountPath: /work
+      env:
+      - name: GIT_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: git-http-credentials
+            key: GIT_TOKEN
+      - name: GIT_USERNAME
+        valueFrom:
+          secretKeyRef:
+            name: git-http-credentials
+            key: GIT_USERNAME
+      source: |
+        set -eu
+        cd {{inputs.parameters.repo-path}}
+        ls /work
+        git config user.email "{{inputs.parameters.git-user-email}}"
+        git config user.name "{{inputs.parameters.git-user-name}}"
+
+        BRANCH="{{inputs.parameters.branch}}"
+        AUTH_METHOD_PARAM="{{inputs.parameters.auth-method}}"
+        # Decide whether to use HTTPS auth header or SSH. auth-method param: auto|ssh|https
+        USE_HTTPS=0
+        if [ "${AUTH_METHOD_PARAM}" = "https" ]; then
+          USE_HTTPS=1
+        elif [ "${AUTH_METHOD_PARAM}" = "ssh" ]; then
+          USE_HTTPS=0
+        else
+          # Try to infer from origin
+          ORIGIN_URL=$(git config --get remote.origin.url || echo "")
+          case "$ORIGIN_URL" in http://*|https://*) USE_HTTPS=1 ;; *) USE_HTTPS=0 ;; esac
+        fi
+
+        # Ensure we're on the branch
+        git checkout "$BRANCH" || git checkout -b "$BRANCH"
+
+        git status
+
+        # If there are no changes (including untracked files), exit cleanly
+        if git diff --quiet && git diff --staged --quiet && [ -z "$(git ls-files --others --exclude-standard)" ]; then
+          echo "No changes to commit"
+          exit 0
+        fi
+
+        git add -A
+        git commit -m "{{inputs.parameters.commit-message}}"
+
+        if [ "$USE_HTTPS" -eq 1 ]; then
+          if [ -z "${GIT_TOKEN:-}" ]; then
+            echo "GIT_TOKEN not provided for HTTPS push" >&2
+            exit 1
+          fi
+          git -c credential.helper="!f() { echo username=${GIT_USERNAME:-}; echo password=${GIT_TOKEN}; }; f" push origin "$BRANCH" --set-upstream
+        else
+          git push origin "$BRANCH" --set-upstream
+        fi
+
+  - name: helm-template-to-file
+    inputs:
+      parameters:
+      - name: chart-path
+      - name: release-name
+        value: release
+      - name: namespace
+        value: default
+      - name: values-file
+        value: ""
+      - name: output-file
+        value: /tmp/rendered.yaml
+    script:
+      image: alpine/helm:3.12.0
+      command: [sh]
+      volumeMounts:
+      - name: work
+        mountPath: /work
+      source: |
+        set -eux
+        ls /work
+        # Chart path is expected to be present in work (e.g. cloned repo)
+        CMD="helm template {{inputs.parameters.release-name}} {{inputs.parameters.chart-path}} --namespace {{inputs.parameters.namespace}}"
+        if [ -n "{{inputs.parameters.values-file}}" ] && [ "{{inputs.parameters.values-file}}" != "" ]; then
+          CMD="$CMD -f {{inputs.parameters.values-file}}"
+        fi
+        echo "Running: $CMD"
+        $CMD > {{inputs.parameters.output-file}}
+        echo "Wrote rendered manifest to {{inputs.parameters.output-file}}"
+
+  - name: argocd-sync-wait
+    inputs:
+      parameters:
+      - name: app-name
+      - name: timeout
+        value: "300" # seconds
+    container:
+      image: argoproj/argocd:latest
+      command: [sh, -c]
+      volumeMounts:
+      - name: work
+        mountPath: /work
+      args:
+      - |
+        set -eux
+        if [ -z "${ARGOCD_AUTH_TOKEN:-}" ]; then
+          echo "ARGOCD_AUTH_TOKEN not set; failing"
+          exit 1
+        fi
+        ARGOCD_SERVER=${ARGOCD_SERVER:-argocd-server:443}
+        # Sync the app
+        argocd app sync {{inputs.parameters.app-name}} --grpc-web --server "$ARGOCD_SERVER" --auth-token "$ARGOCD_AUTH_TOKEN"
+        # Wait for healthy state (timeout in seconds)
+        argocd app wait {{inputs.parameters.app-name}} --health --timeout {{inputs.parameters.timeout}}
+
+  # Define a reusable volume for mounting SSH keys if users choose to use it
+  # Volumes available to templates in this WorkflowTemplate
+  volumes:
+  - name: git-ssh
+    secret:
+      secretName: github-ssh-key
+      defaultMode: 0600
+

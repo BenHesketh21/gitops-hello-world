@@ -1,0 +1,10 @@
+serviceName: hello-world-ui
+image:
+  repository: hello-world-ui
+
+
+deployment:
+  replicas: 2
+
+service:
+  port: 80

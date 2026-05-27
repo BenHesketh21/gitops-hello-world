@@ -1,0 +1,12 @@
+environment: dev
+
+image:
+  tag: "latest"
+
+ingress:
+  enabled: true
+  hosts: 
+  - host: hello-world.local
+    paths:
+    - path: /
+      pathType: Prefix

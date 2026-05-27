@@ -1,0 +1,21 @@
+serviceName: hello-world-api
+environment: dev
+image:
+  repository: hello-world-api
+  tag: "latest"
+
+labels: {}
+
+deployment:
+  replicas: 2
+
+service:
+  port: 8080
+
+ingress:
+  enabled: true
+  hosts: 
+  - host: hello-world.local
+    paths:
+    - path: /
+      pathType: Prefix
