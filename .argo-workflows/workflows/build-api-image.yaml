@@ -16,7 +16,7 @@ spec:
     - name: path
       value: "apps/api" # <-- set if your Dockerfile is not named Dockerfile
     - name: registry
-      value: "ghcr.io" # <-- set your registry (e.g., docker.io, ghcr.io, etc.)
+      value: "ghcr.io/benhesketh21" # <-- set your registry (e.g., docker.io, ghcr.io, etc.)
     - name: image
       value: "gitops-hello-world-api"
     - name: tag
