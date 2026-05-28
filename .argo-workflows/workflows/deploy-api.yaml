@@ -11,7 +11,7 @@ spec:
   arguments:
     parameters:
     - name: repo-url
-      value: "https://github.com/BenHesketh21/hello-world-gitops.git" # <--- update with real repo URL
+      value: "https://github.com/BenHesketh21/gitops-hello-world.git" # <--- update with real repo URL
     - name: base-branch
       value: "main"
     - name: output-branch
@@ -19,7 +19,7 @@ spec:
     - name: chart-path
       value: "chart" # path inside the repo to the Helm chart
     - name: values-file
-      value: "charts/values/api/dev.yaml" # path inside repo to values file (adjust as needed)
+      value: "chart/values/api/dev.yaml" # path inside repo to values file (adjust as needed)
     - name: release-name
       value: "api"
     - name: app-name

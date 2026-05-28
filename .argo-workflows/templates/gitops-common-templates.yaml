@@ -18,12 +18,8 @@ spec:
         value: main
       - name: dest
         value: /work/repo
-      - name: git-user-name
-        value: "Argo Workflows"
-      - name: git-user-email
-        value: "argowf@example.com"
     script:
-      image: alpine/git:latest
+      image: alpine/git:v2.26.2
       command: [sh]
       volumeMounts:
       - name: work
@@ -81,9 +77,6 @@ spec:
           fi
         fi
 
-        git config user.email "{{inputs.parameters.git-user-email}}"
-        git config user.name "{{inputs.parameters.git-user-name}}"
-
         # Ensure branch exists locally, try remote branch then create if necessary
         if git rev-parse --verify --quiet refs/heads/"$BRANCH"; then
           git checkout "$BRANCH"
@@ -112,7 +105,7 @@ spec:
       - name: git-user-email
         value: "argowf@example.com"
     script:
-      image: alpine/git:latest
+      image: alpine/git:v2.26.2
       command: [sh]
       volumeMounts:
       - name: work
@@ -160,6 +153,7 @@ spec:
           exit 0
         fi
 
+        git pull origin "$BRANCH"
         git add -A
         git commit -m "{{inputs.parameters.commit-message}}"
 
@@ -183,7 +177,7 @@ spec:
         value: default
       - name: values-file
         value: ""
-      - name: output-file
+      - name: output
         value: /tmp/rendered.yaml
     script:
       image: alpine/helm:3.12.0
@@ -199,9 +193,22 @@ spec:
         if [ -n "{{inputs.parameters.values-file}}" ] && [ "{{inputs.parameters.values-file}}" != "" ]; then
           CMD="$CMD -f {{inputs.parameters.values-file}}"
         fi
-        echo "Running: $CMD"
-        $CMD > {{inputs.parameters.output-file}}
-        echo "Wrote rendered manifest to {{inputs.parameters.output-file}}"
+        OUTPUT="{{inputs.parameters.output}}"
+        # If output ends with .yaml or .yml, write to file; else use --output-dir
+        case "$OUTPUT" in
+          *.yaml|*.yml)
+            echo "Running: $CMD > $OUTPUT"
+            $CMD > "$OUTPUT"
+            echo "Wrote rendered manifest to $OUTPUT"
+            ;;
+          *)
+            CMD="$CMD --output-dir $OUTPUT"
+            mkdir -p "$OUTPUT"
+            echo "Running: $CMD"
+            $CMD
+            echo "Wrote rendered manifests to directory $OUTPUT"
+            ;;
+        esac
 
   - name: argocd-sync-wait
     inputs:

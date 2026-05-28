@@ -1,0 +1,102 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: git-common
+  namespace: argo
+spec:
+  templates:
+    - name: clone
+      inputs:
+        parameters:
+          - name: repo
+          - name: branch
+          - name: dir
+            value: "." # default to root of workspace
+      script:
+        volumeMounts:
+          - mountPath: /work
+            name: work
+        image: alpine/git:v2.26.2
+        workingDir: /work
+        command: [sh]
+        source: |
+          set -eu
+          echo "Cloning repository {{inputs.parameters.repo}} (branch: {{inputs.parameters.branch}})"
+          git clone \
+            --depth "1" \
+            --single-branch \
+            --branch "{{inputs.parameters.branch}}" \
+            "{{inputs.parameters.repo}}" \
+            "{{inputs.parameters.dir}}"
+    - name: switch-branch
+      inputs:
+        parameters:
+          - name: new-branch
+      script:
+        volumeMounts:
+          - mountPath: /work
+            name: work
+        image: alpine/git:v2.26.2
+        workingDir: /work
+        command: [sh]
+        source: |
+          set -eu
+          if git rev-parse --verify --quiet "refs/heads/{{inputs.parameters.new-branch}}"
+          then
+            git checkout "{{inputs.parameters.new-branch}}"
+          else
+            if git ls-remote --heads origin "{{inputs.parameters.new-branch}}" | grep -q refs/heads/"{{inputs.parameters.new-branch}}"
+            then
+              echo "Branch {{inputs.parameters.new-branch}} exists, checking out"
+              git fetch origin "{{inputs.parameters.new-branch}}"
+              git checkout \
+                -b \
+                "{{inputs.parameters.new-branch}}"
+            else
+              echo "Branch {{inputs.parameters.new-branch}} does not exist, creating and checking out"
+              git checkout \
+                -b \
+                "{{inputs.parameters.new-branch}}"
+            fi
+          fi
+    - name: clear
+      inputs:
+        parameters:
+          - name: path
+            value: "/work/output"
+      script:
+        volumeMounts:
+          - mountPath: /work
+            name: work
+        image: alpine/git:v2.26.2
+        workingDir: /work
+        command: [sh]
+        source: |
+          set -eu
+          cd "{{inputs.parameters.path}}"
+          eval "find . -mindepth 1 -maxdepth 1 \
+            ! -name '.git' \
+            ! -name '.gitignore' \
+            ! -name '.gitattributes' \
+            ! -name '.gitmodules' \
+            -exec rm -rf {} +"
+          ls -al
+    - name: copy
+      inputs:
+        parameters:
+          - name: from
+          - name: to
+      script:
+        volumeMounts:
+          - mountPath: /work
+            name: work
+        image: alpine/git:v2.26.2
+        workingDir: /work
+        command: [sh]
+        source: |
+          set -eu
+          echo "Creating {{inputs.parameters.to}} if doesn't exist"
+          mkdir -p "{{inputs.parameters.to}}"
+          echo "Copying {{inputs.parameters.from}} to {{inputs.parameters.to}}"
+          cp -R "{{inputs.parameters.from}}" "{{inputs.parameters.to}}"
+    

@@ -22,30 +22,6 @@ spec:
       value: api
     - name: commit-message
       value: "Promote API via Argo Workflows"
-  parameters:
-  - name: repo-url
-    description: "Git repository URL containing the Helm chart and values file"
-  - name: base-branch
-    description: "Branch to clone for rendering the Helm chart"
-    value: main
-  - name: output-branch
-    description: "Branch to push the rendered manifests for Argo CD"
-    value: promotions
-  - name: chart-path
-    description: "Path to the Helm chart within the repository"
-    value: chart
-  - name: values-file
-    description: "Path to the Helm values file within the repository"
-    value: values.yaml
-  - name: release-name
-    description: "Name of the Helm release"
-    value: api
-  - name: app-name
-    description: "Name of the Argo CD application to sync"
-    value: api
-  - name: commit-message
-    description: "Commit message for the changes pushed to the output branch"
-    value: "Promote API via Argo Workflows" 
   volumeClaimTemplates:
     - metadata:
         name: work
@@ -56,70 +32,88 @@ spec:
             storage: 64Mi
   templates:
   - name: deploy-api-pipeline
-    inputs:
-      parameters:
-      - name: repo-url
-      - name: base-branch
-        value: main
-      - name: output-branch
-        value: promotions
-      - name: chart-path
-        value: charts/app1
-      - name: values-file
-        value: values.yaml
-      - name: release-name
-        value: api
-      - name: app-name
-        value: api
-      - name: commit-message
-        value: "Promote API via Argo Workflows"
-    steps:
-    - - name: clone
+    dag:
+      tasks:
+      - name: clone-dry
         templateRef:
-          name: gitops-common-templates
-          template: git-clone-ensure-branch
+          name: git-common
+          template: clone
         arguments:
           parameters:
-          - name: repo-url
-            value: "{{inputs.parameters.repo-url}}"
+          - name: repo
+            value: "{{workflow.parameters.repo-url}}"
           - name: branch
-            value: "{{inputs.parameters.output-branch}}"
-          - name: dest
-            value: "/work"
-    - - name: render-helm
+            value: "{{workflow.parameters.base-branch}}"
+          - name: dir
+            value: "/work/dry"
+      - name: clone-output
+        templateRef:
+          name: git-common
+          template: clone
+        arguments:
+          parameters:
+          - name: repo
+            value: "{{workflow.parameters.repo-url}}"
+          - name: branch
+            value: "{{workflow.parameters.output-branch}}"
+          - name: dir
+            value: "/work/output"
+      - name: clear
+        templateRef:
+          name: git-common
+          template: clear
+        arguments:
+          parameters:
+          - name: path
+            value: "/work/output/"
+        dependencies: ["clone-output"]
+      - name: render-helm
         templateRef:
           name: gitops-common-templates
           template: helm-template-to-file
         arguments:
           parameters:
           - name: chart-path
-            value: "/work/{{inputs.parameters.chart-path}}"
+            value: "/work/dry/{{workflow.parameters.chart-path}}"
           - name: values-file
-            value: "/work/{{inputs.parameters.values-file}}"
-          - name: output-file
-            value: "/work/rendered.yaml"
+            value: "/work/dry/{{workflow.parameters.values-file}}"
+          - name: output
+            value: "/work/dry/output"
           - name: release-name
-            value: "{{inputs.parameters.release-name}}"
-    - - name: commit-and-push
+            value: "{{workflow.parameters.release-name}}"
+        dependencies: ["clone-dry"]
+      - name: copy
+        templateRef:
+          name: git-common
+          template: copy
+        arguments:
+          parameters:
+          - name: from
+            value: /work/dry/output
+          - name: to
+            value: /work/output/
+        dependencies: [render-helm, clear]
+      - name: commit-and-push
         templateRef:
           name: gitops-common-templates
           template: git-commit-push
         arguments:
           parameters:
           - name: repo-path
-            value: "/work"
+            value: "/work/output"
           - name: branch
-            value: "{{inputs.parameters.output-branch}}"
+            value: "{{workflow.parameters.output-branch}}"
           - name: commit-message
-            value: "{{inputs.parameters.commit-message}}"
-    # - - name: argocd-sync
+            value: "{{workflow.parameters.commit-message}}"
+        dependencies: ["copy"]
+    #   - name: argocd-sync
     #     templateRef:
     #       name: gitops-common-templates
     #       template: argocd-sync-wait
     #     arguments:
     #       parameters:
     #       - name: app-name
-    #         value: "{{inputs.parameters.app-name}}"
+    #         value: "{{workflow.parameters.app-name}}"
     #       - name: timeout
     #         value: "300"
 

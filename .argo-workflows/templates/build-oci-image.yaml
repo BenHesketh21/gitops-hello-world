@@ -33,16 +33,15 @@ spec:
       dag:
         tasks:
           - name: clone
-            template: clone
+            templateRef:
+              name: git-common
+              template: clone
             arguments:
               parameters:
-                - name: repo
-                  value: "{{workflow.parameters.repo}}"
-                - name: branch
-                  value: "{{workflow.parameters.branch}}"
-          - name: check
-            template: check
-            depends: "clone"
+              - name: repo
+                value: "{{workflow.parameters.repo}}"
+              - name: branch
+                value: "{{workflow.parameters.branch}}"
           - name: image
             template: image
             arguments:
@@ -56,41 +55,6 @@ spec:
                 - name: tag
                   value: "{{workflow.parameters.tag}}"
             depends: "clone"
-    - name: clone
-      inputs:
-        parameters:
-          - name: repo
-          - name: branch
-      container:
-        volumeMounts:
-          - mountPath: /work
-            name: work
-        image: alpine/git:v2.26.2
-        workingDir: /work
-        # Do a shallow clone, which is the fastest way to clone, by using the
-        # --depth, --branch, and --single-branch options
-        args:
-          - clone
-          - --depth
-          - "1"
-          - --branch
-          - "{{inputs.parameters.branch}}"
-          - --single-branch
-          - "{{inputs.parameters.repo}}"
-          - .
-    - name: check
-      script:
-        volumeMounts:
-          - mountPath: /work
-            name: work
-        image: alpine/git:v2.26.2
-        workingDir: /work
-        command: [sh]
-        source: |
-          set -eux
-          ls /work
-          ls /work/apps/api
-          cat /work/apps/api/Dockerfile
     - name: image
       inputs:
         parameters:
