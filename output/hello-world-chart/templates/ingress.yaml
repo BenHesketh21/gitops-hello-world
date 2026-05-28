@@ -1,0 +1,18 @@
+---
+# Source: hello-world-chart/templates/ingress.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: hello-world-api-dev
+spec:
+  rules:
+    - host: "hello-world-api.local"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: hello-world-api-dev
+                port:
+                  number: 8080

@@ -1,0 +1,15 @@
+---
+# Source: hello-world-chart/templates/service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello-world-api-dev
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    hello-world-api-dev

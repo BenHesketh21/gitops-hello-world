@@ -1,9 +1,0 @@
-serviceName: hello-world-api
-image:
-  repository: hello-world-api
-
-deployment:
-  replicas: 2
-
-service:
-  port: 8080
