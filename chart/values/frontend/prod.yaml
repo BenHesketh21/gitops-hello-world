@@ -1,13 +1,12 @@
-environment: dev
+environment: prod
 
 image:
   tag: "0.0.1"
 
-
 ingress:
   enabled: true
   hosts: 
-  - host: hello-world-api.local
+  - host: hello-world.local
     paths:
     - path: /
       pathType: Prefix

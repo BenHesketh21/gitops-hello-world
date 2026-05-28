@@ -1,4 +1,4 @@
-environment: dev
+environment: prod
 
 image:
   tag: "0.0.1"

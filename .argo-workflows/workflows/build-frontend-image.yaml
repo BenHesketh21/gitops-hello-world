@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: build-frontend-image-
+  namespace: argo
+spec:
+  workflowTemplateRef:
+    name: build-oci-image
+  entrypoint: main
+  arguments:
+    parameters:
+    - name: repo
+      value: "https://github.com/BenHesketh21/gitops-hello-world.git" # <-- set your registry/repo/tag
+    - name: branch
+      value: "main" # <-- set to your branch name
+    - name: path
+      value: "apps/frontend" # <-- set if your Dockerfile is not named Dockerfile
+    - name: registry
+      value: "ghcr.io/benhesketh21" # <-- set your registry (e.g., docker.io, ghcr.io, etc.)
+    - name: image
+      value: "gitops-hello-world-frontend"
+    - name: tag
+      value: "0.0.1" # <-- set your image tag

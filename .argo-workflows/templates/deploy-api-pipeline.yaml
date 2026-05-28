@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: WorkflowTemplate
 metadata:
-  name: deploy-api-pipeline
+  name: deploy-helm-pipeline
   namespace: argo
 spec:
   arguments:
@@ -31,7 +31,7 @@ spec:
           requests:
             storage: 64Mi
   templates:
-  - name: deploy-api-pipeline
+  - name: deploy-helm-pipeline
     dag:
       tasks:
       - name: clone-dry
