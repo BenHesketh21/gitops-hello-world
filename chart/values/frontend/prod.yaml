@@ -1,6 +1,7 @@
 environment: prod
 
 image:
+  repository: gitops-hello-world-frontend
   tag: "0.0.1"
 
 ingress:

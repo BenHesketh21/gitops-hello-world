@@ -1,7 +1,7 @@
 serviceName: hello-world-api
 environment: dev
 image:
-  repository: hello-world-api
+  repository: gitops-hello-world-api
   tag: "latest"
 
 labels: {}

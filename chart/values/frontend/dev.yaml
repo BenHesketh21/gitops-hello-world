@@ -1,6 +1,7 @@
 environment: dev
 
 image:
+  repository: gitops-hello-world-frontend
   tag: "latest"
 
 ingress:
