@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
         - name: hello-world-api-dev
-          image: "hello-world-api:latest"
+          image: "hello-world-api:0.0.2"
           ports:
             - name: http
               containerPort: 8080
