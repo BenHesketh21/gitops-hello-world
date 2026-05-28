@@ -1,0 +1,21 @@
+---
+# Source: hello-world-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-api-dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      hello-world-api-dev
+  template:
+    metadata:
+    spec:
+      containers:
+        - name: hello-world-api-dev
+          image: "hello-world-api:latest"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
