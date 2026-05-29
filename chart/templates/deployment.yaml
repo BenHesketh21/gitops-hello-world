@@ -10,11 +10,11 @@ spec:
   replicas: {{ .Values.deployment.replicas }}
   selector:
     matchLabels:
-      app: {{- include "chart.fullname" . | nindent 6 }}
+      app: {{ include "chart.fullname" . }}
   template:
     metadata:
       labels:
-        app: {{- include "chart.fullname" . | nindent 8 }}
+        app: {{ include "chart.fullname" . }}
     spec:
       containers:
         - name: {{ include "chart.fullname" . }}
