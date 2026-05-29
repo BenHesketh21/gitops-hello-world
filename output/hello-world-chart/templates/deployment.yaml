@@ -8,9 +8,11 @@ spec:
   replicas: 2
   selector:
     matchLabels:
-      hello-world-api-dev
+      app: hello-world-api-dev
   template:
     metadata:
+      labels:
+        app: hello-world-api-dev
     spec:
       containers:
         - name: hello-world-api-dev
