@@ -15,4 +15,5 @@ ingress:
       pathType: Prefix
 
 env:
-  API_URL: http://hello-world-api-dev:8080
+  - name: API_URL
+    value: http://hello-world-api-dev:8080

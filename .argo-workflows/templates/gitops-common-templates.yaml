@@ -219,6 +219,14 @@ spec:
     container:
       image: argoproj/argocd:latest
       command: [sh, -c]
+      env:
+      - name: ARGOCD_AUTH_TOKEN
+        valueFrom:
+          secretKeyRef:
+            name: argocd-jwt
+            key: argocd-jwt
+      - name: ARGOCD_SERVER
+        value: argocd-server.argocd.svc.cluster.local:80
       volumeMounts:
       - name: work
         mountPath: /work
