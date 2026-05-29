@@ -2,9 +2,11 @@ const express = require('express');
 const fetch = require('node-fetch');
 const app = express();
 
+const API_URL = process.env.API_URL;
+
 app.get('/', async (req, res) => {
   try {
-    const apiRes = await fetch('http://api:5000/api/message');
+    const apiRes = await fetch(`${API_URL}/api/message`);
     const data = await apiRes.json();
     res.send(`<h1>${data.message}</h1>`);
   } catch (e) {

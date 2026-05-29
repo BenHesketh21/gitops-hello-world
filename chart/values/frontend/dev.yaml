@@ -13,3 +13,6 @@ ingress:
     paths:
     - path: /
       pathType: Prefix
+
+env:
+  API_URL: http://hello-world-api-dev:8080
