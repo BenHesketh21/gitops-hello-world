@@ -4,8 +4,6 @@ image:
   repository: gitops-hello-world-api
   tag: "latest"
 
-labels: {}
-
 deployment:
   replicas: 2
 

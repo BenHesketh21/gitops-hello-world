@@ -1,17 +1,19 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: frontend
+  name: hello-world-api-dev
   namespace: argocd
 spec:
   project: default
   source:
-    repoURL: 'https://github.com/yourusername/hello-world-gitops'
-    targetRevision: HEAD
-    path: frontend
+    repoURL: 'https://github.com/BenHesketh21/gitops-hello-world.git'
+    targetRevision: env/dev/api
+    path: output
+    directory:
+        recurse: true
   destination:
     server: 'https://kubernetes.default.svc'
-    namespace: frontend
+    namespace: dev
   syncPolicy:
     automated:
       prune: true
