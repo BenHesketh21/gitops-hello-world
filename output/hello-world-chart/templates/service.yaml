@@ -12,4 +12,4 @@ spec:
       protocol: TCP
       name: http
   selector:
-    hello-world-api-dev
+    app: hello-world-api-dev
