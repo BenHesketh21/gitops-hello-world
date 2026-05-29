@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: hello-world-api-dev
-          image: "gitops-hello-world-api:0.0.1"
+          image: "ghcr.io/benhesketh21/gitops-hello-world-api:0.0.1"
           ports:
             - name: http
               containerPort: 8080
