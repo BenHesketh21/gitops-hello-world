@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: hello-world-frontend-dev
-          image: "gitops-hello-world-frontend:latest"
+          image: "ghcr.io/benhesketh21/gitops-hello-world-frontend:latest"
           ports:
             - name: http
               containerPort: 8080
