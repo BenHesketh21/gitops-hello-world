@@ -12,10 +12,11 @@ spec:
           - name: branch
           - name: dir
             value: "." # default to root of workspace
+          - name: workspace
       script:
         volumeMounts:
           - mountPath: /work
-            name: work
+            name: "{{inputs.parameters.workspace}}" 
         image: alpine/git:v2.26.2
         workingDir: /work
         command: [sh]
@@ -32,10 +33,11 @@ spec:
       inputs:
         parameters:
           - name: new-branch
+          - name: workspace
       script:
         volumeMounts:
           - mountPath: /work
-            name: work
+            name: "{{inputs.parameters.workspace}}"
         image: alpine/git:v2.26.2
         workingDir: /work
         command: [sh]
@@ -63,11 +65,11 @@ spec:
       inputs:
         parameters:
           - name: path
-            value: "/work/output"
+          - name: workspace
       script:
         volumeMounts:
           - mountPath: /work
-            name: work
+            name: "{{inputs.parameters.workspace}}"
         image: alpine/git:v2.26.2
         workingDir: /work
         command: [sh]
@@ -86,10 +88,11 @@ spec:
         parameters:
           - name: from
           - name: to
+          - name: workspace
       script:
         volumeMounts:
           - mountPath: /work
-            name: work
+            name: "{{inputs.parameters.workspace}}"
         image: alpine/git:v2.26.2
         workingDir: /work
         command: [sh]

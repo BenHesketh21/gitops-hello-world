@@ -9,6 +9,8 @@ spec:
     repoURL: 'https://github.com/BenHesketh21/gitops-hello-world.git'
     targetRevision: env/prod/frontend
     path: output
+    directory:
+        recurse: true
   destination:
     server: 'https://kubernetes.default.svc'
     namespace: prod

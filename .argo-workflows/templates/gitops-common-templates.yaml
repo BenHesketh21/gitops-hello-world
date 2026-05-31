@@ -104,11 +104,12 @@ spec:
         value: "Argo Workflows"
       - name: git-user-email
         value: "argowf@example.com"
+      - name: workspace
     script:
       image: alpine/git:v2.26.2
       command: [sh]
       volumeMounts:
-      - name: work
+      - name: "{{inputs.parameters.workspace}}"
         mountPath: /work
       env:
       - name: GIT_TOKEN
@@ -179,11 +180,12 @@ spec:
         value: ""
       - name: output
         value: /tmp/rendered.yaml
+      - name: workspace
     script:
       image: alpine/helm:3.12.0
       command: [sh]
       volumeMounts:
-      - name: work
+      - name: "{{inputs.parameters.workspace}}"
         mountPath: /work
       source: |
         set -eux
@@ -227,9 +229,6 @@ spec:
             key: argocd-jwt
       - name: ARGOCD_SERVER
         value: argocd-server.argocd.svc.cluster.local:80
-      volumeMounts:
-      - name: work
-        mountPath: /work
       args:
       - |
         set -eux
@@ -237,11 +236,10 @@ spec:
           echo "ARGOCD_AUTH_TOKEN not set; failing"
           exit 1
         fi
-        ARGOCD_SERVER=${ARGOCD_SERVER:-argocd-server:443}
         # Sync the app
-        argocd app sync {{inputs.parameters.app-name}} --grpc-web --server "$ARGOCD_SERVER" --auth-token "$ARGOCD_AUTH_TOKEN"
+        argocd app sync {{inputs.parameters.app-name}} --grpc-web --insecure
         # Wait for healthy state (timeout in seconds)
-        argocd app wait {{inputs.parameters.app-name}} --health --timeout {{inputs.parameters.timeout}}
+        argocd app wait {{inputs.parameters.app-name}} --health --timeout {{inputs.parameters.timeout}} --insecure
 
   # Define a reusable volume for mounting SSH keys if users choose to use it
   # Volumes available to templates in this WorkflowTemplate
