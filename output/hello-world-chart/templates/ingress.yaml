@@ -3,7 +3,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: hello-world-api-prod
+  name: hello-world-frontend-prod
 spec:
   rules:
     - host: "hello-world.local"
@@ -13,6 +13,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: hello-world-api-prod
+                name: hello-world-frontend-prod
                 port:
                   number: 8080

@@ -3,19 +3,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: hello-world-api-prod
+  name: hello-world-frontend-prod
 spec:
   replicas: 2
   selector:
     matchLabels:
-      app: hello-world-api-prod
+      app: hello-world-frontend-prod
   template:
     metadata:
       labels:
-        app: hello-world-api-prod
+        app: hello-world-frontend-prod
     spec:
       containers:
-        - name: hello-world-api-prod
+        - name: hello-world-frontend-prod
           image: "/gitops-hello-world-frontend:0.0.1"
           ports:
             - name: http
