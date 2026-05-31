@@ -1,8 +1,9 @@
 environment: prod
 
 image:
+  registry: ghcr.io/benhesketh21
+  repository: gitops-hello-world-api
   tag: "0.0.1"
-
 
 ingress:
   enabled: true
