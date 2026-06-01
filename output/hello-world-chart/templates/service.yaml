@@ -1,13 +1,15 @@
+---
+# Source: hello-world-chart/templates/service.yaml
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "chart.fullname" . }}
+  name: hello-world-frontend-dev
 spec:
   type: ClusterIP
   ports:
-    - port: {{ .Values.service.port }}
+    - port: 8080
       targetPort: http
       protocol: TCP
       name: http
   selector:
-    app: {{ include "chart.fullname" . }}
+    app: hello-world-frontend-dev

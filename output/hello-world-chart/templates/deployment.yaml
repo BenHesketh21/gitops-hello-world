@@ -1,0 +1,26 @@
+---
+# Source: hello-world-chart/templates/deployment.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello-world-frontend-dev
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello-world-frontend-dev
+  template:
+    metadata:
+      labels:
+        app: hello-world-frontend-dev
+    spec:
+      containers:
+        - name: hello-world-frontend-dev
+          image: "ghcr.io/benhesketh21/gitops-hello-world-frontend:0.0.1"
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: API_URL
+              value: http://hello-world-api-dev:8080
